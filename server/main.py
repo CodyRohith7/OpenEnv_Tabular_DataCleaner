@@ -30,7 +30,10 @@ def read_root():
     }
 
 @app.post("/reset", response_model=Observation)
-def reset_env(req: ResetRequest):
+def reset_env(req: ResetRequest = None):
+    # Handle empty POST requests gracefully (required by some graders)
+    if req is None:
+        req = ResetRequest(task_id="easy")
     return env.reset(req.task_id)
 
 @app.post("/step", response_model=StepResponse)
