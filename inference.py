@@ -124,7 +124,8 @@ async def main():
     model_name = os.getenv("MODEL_NAME", "gpt-4o-mini")
     
     llm = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    client = EnvClient(base_url="http://localhost:7860")
+    env_url = os.getenv("ENV_URL", "http://localhost:7860")
+    client = EnvClient(base_url=env_url)
     
     for task_id in ["easy", "medium", "hard"]:
         await run_task(task_id, client, llm, model_name)
