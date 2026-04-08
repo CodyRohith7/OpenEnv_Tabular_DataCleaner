@@ -7,3 +7,4 @@ __pycache__/
 *.swp
 .git/
 server/datasets/__pycache__/
+pre_validate.py
