@@ -5,17 +5,14 @@ import httpx
 from openai import AsyncOpenAI
 from typing import List
 
-def log_start(task: str, env: str, model: str):
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+def log_start(task: str):
+    print(f"[START] task={task}", flush=True)
 
-def log_step(step: int, action: str, reward: float, done: bool, error: str = None):
-    err_str = error if error else "null"
-    # Action without quotes, reward 2 decimals, done lower, error null or string
-    print(f'[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error={err_str}', flush=True)
+def log_step(step: int, reward: float):
+    print(f"[STEP] step={step} reward={reward:.2f}", flush=True)
 
-def log_end(success: bool, steps: int, score: float, rewards: list):
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+def log_end(task: str, score: float, steps: int):
+    print(f"[END] task={task} score={score:.3f} steps={steps}", flush=True)
 
 MAX_STEPS = {"easy": 5, "medium": 10, "hard": 15}
 
@@ -35,14 +32,19 @@ class EnvClient:
         return res.json()
 
 async def run_task(task_id: str, client: EnvClient, llm: AsyncOpenAI, model_name: str):
-    obs = await client.reset(task_id)
+    log_start(task=task_id)
+    
+    try:
+        obs = await client.reset(task_id)
+    except Exception as e:
+        print(f"Error resetting environment: {e}", flush=True)
+        log_end(task=task_id, score=0.0, steps=0)
+        return
+
     history: List[str] = []
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
-    success = False
-
-    log_start(task=task_id, env="TabularDataCleaning", model=model_name)
     
     system_prompt = (
         "You are a helpful Data Engineer agent. "
@@ -88,7 +90,7 @@ async def run_task(task_id: str, client: EnvClient, llm: AsyncOpenAI, model_name
             error_str = str(e)
             action_str = "null"
             done = True
-            log_step(step=step, action=action_str, reward=0.0, done=True, error=error_str)
+            log_step(step=step, reward=0.0)
             break
             
         history.append((prompt, action_text))
@@ -109,14 +111,13 @@ async def run_task(task_id: str, client: EnvClient, llm: AsyncOpenAI, model_name
         rewards.append(reward)
         steps_taken = step
         
-        log_step(step=step, action=action_str, reward=reward, done=done, error=error)
+        log_step(step=step, reward=reward)
         
         if done:
             score = info.get("final_score", 0.0)
             break
             
-    success = score >= 0.8
-    log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+    log_end(task=task_id, score=score, steps=steps_taken)
 
 async def main():
     api_key = os.getenv("OPENAI_API_KEY")
