@@ -21,6 +21,14 @@ class StepResponse(BaseModel):
 def health():
     return {"status": "ok"}
 
+@app.get("/")
+def read_root():
+    return {
+        "message": "Welcome to the OpenEnv Tabular Data Cleaning Environment",
+        "spec": "OpenEnv 1.0",
+        "endpoints": ["/reset", "/step", "/state", "/health"]
+    }
+
 @app.post("/reset", response_model=Observation)
 def reset_env(req: ResetRequest):
     return env.reset(req.task_id)
