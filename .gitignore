@@ -1,0 +1,9 @@
+venv/
+.env
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+*.swp
+.git/
+server/datasets/__pycache__/

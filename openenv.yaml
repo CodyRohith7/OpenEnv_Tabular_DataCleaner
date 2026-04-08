@@ -1,0 +1,17 @@
+name: TabularDataCleaning
+version: "1.0"
+description: >
+  An environment where an agent cleans tabular data using standard declarative data engineering primitives, judged by metric improvements on hidden ground-truth datasets.
+build:
+  dockerfile: Dockerfile
+environment:
+  API_BASE_URL: "https://api.openai.com/v1"
+  MODEL_NAME: "gpt-4o"
+  HF_TOKEN: ""
+tasks:
+  - id: easy
+    description: "Single-column cleanup (whitespace trim, case normalization, missing value imputation)."
+  - id: medium
+    description: "Multi-column standardizing and exact row deduplication."
+  - id: hard
+    description: "End-to-end data processing: extraction, currency conversion, and aggregations using Groupby."
