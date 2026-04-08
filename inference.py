@@ -120,10 +120,8 @@ async def run_task(task_id: str, client: EnvClient, llm: AsyncOpenAI, model_name
     log_end(task=task_id, score=score, steps=steps_taken)
 
 async def main():
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Error: OPENAI_API_KEY environment variable is not set.")
-        return
+    api_key = os.getenv("OPENAI_API_KEY", "dummy_key_for_testing")
+
         
     base_url = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
     model_name = os.getenv("MODEL_NAME", "gpt-4o-mini")
