@@ -1,5 +1,5 @@
 ---
-title: OpenEnv Tabular Cleaning
+title: "OpenEnv: Tabular Data Cleaner"
 emoji: 🧹
 colorFrom: blue
 colorTo: green
@@ -13,63 +13,56 @@ pinned: false
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A high-performance, deterministic OpenEnv environment designed for the **Meta PyTorch Hackathon**. This environment simulates real-world data engineering tasks where an AI agent must iteratively clean, standardize, and aggregate raw tabular data to match a hidden ground-truth requirement.
+A high-performance, deterministic OpenEnv environment designed for the **Meta PyTorch Hackathon 2026**. This environment simulates real-world data engineering tasks where an AI agent must iteratively clean, standardize, and aggregate raw tabular data to match a hidden ground-truth requirement.
 
-## 🚀 Deployment
+## 🌟 Key Features
+- **Deterministic Evaluation**: Every action has a measurable impact on cell-level accuracy and schema structure.
+- **Three-Tiered Challenge**: Progressive difficulty from simple normalization to complex data engineering (Grouping/Currency/Date Parsing).
+- **Agent-Agnostic API**: strictly follows the OpenEnv specification for seamless integration with GPT-4, Claude, or local LLMs.
+
+## 🚀 Deployment & Usage
+
 - **Hugging Face Space**: [Live Demo](https://huggingface.co/spaces/CodyRohith7/OpenEnv-Tabular-cleaning)
 - **API Endpoint**: `https://codyrohith7-openenv-tabular-cleaning.hf.space`
 
-## 🧠 Environment Design
-The environment implements the **OpenEnv Specification**, providing a strictly-typed API for agentic interaction.
-
-### Task Tiers
-| Tier | Description | Key Operations |
-| :--- | :--- | :--- |
-| **Easy** | Single-column normalization | `STRIP_WHITESPACE`, `NORMALIZE_CASE`, `FILL_MISSING` |
-| **Medium** | Multi-column standardizing | `PARSE_DATE`, `DEDUP_ROWS`, `DROP_COLUMN` |
-| **Hard** | Complex Data Engineering | `CONVERT_CURRENCY`, `EXTRACT_MONTH`, `GROUPBY_SUM` |
-
-### Action Space (`/step`)
-Agents interact by sending JSON actions:
-- `op`: The operation to perform (e.g., `FILL_MISSING`).
-- `column`: Target column name.
-- `value`: Optional parameter (e.g., new column name or fill value).
-
-### Observation Space
-- `preview_current`: Real-time view of the top 3 rows.
-- `cell_accuracy`: Percentage match with ground truth.
-- `missing_rate`: Current ratio of NaNs.
-- `duplicate_rate`: Ratio of redundant rows.
-
-## 🛠️ Local Setup
-
-1. **Clone the Repo**
+### 🛠️ Local Development
+1. **Clone & Setup**
    ```bash
    git clone https://github.com/CodyRohith7/OpenEnv_Tabular_DataCleaner
    cd OpenEnv_Tabular_DataCleaner
-   ```
-
-2. **Install Dependencies**
-   ```bash
    pip install -r requirements.txt
    ```
-
-3. **Run Locally**
+2. **Launch Server**
    ```bash
    uvicorn server.main:app --host 0.0.0.0 --port 7860
    ```
 
 ## 🤖 Baseline Evaluation
-To run the included GPT-4o baseline agent against your live environment:
+To benchmark the environment, we provide a sophisticated baseline agent in `inference.py`.
 
 ```bash
-export OPENAI_API_KEY="your_key"
-export ENV_URL="https://codyrohith7-openenv-tabular-cleaning.hf.space"
+# Set your OpenAI Key
+export OPENAI_API_KEY="sk-..."
+# Run the evaluation loop
 python inference.py
 ```
 
-## ⚖️ Evaluation Metric
-The final score is a composite of **Cell Accuracy**, **Schema Correctness**, and **Deduplication F1-Score**, ensuring the agent doesn't just "guess" but actually structures the data correctly.
+### Evaluation Metric (`Reward Logic`)
+The environment rewards agents based on:
+1. **Cell Accuracy (40%)**: Literal match with the gold dataset.
+2. **Schema Correctness (30%)**: Target column existence and naming.
+3. **Deduplication F1 (30%)**: Proper handling of redundant records.
+
+## 🏗️ Technical Architecture
+```mermaid
+graph TD
+    A[Inference Agent] -->|POST /step| B[FastAPI Server]
+    B --> C[DataCleaningEnv]
+    C --> D[Pandas Engine]
+    D -->|Metric Calc| E[Comparison Logic]
+    E -->|Observation| B
+    B -->|JSON| A
+```
 
 ---
 Built with ❤️ for the **Meta PyTorch Hackathon 2026**.

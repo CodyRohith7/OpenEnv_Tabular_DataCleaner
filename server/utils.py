@@ -10,8 +10,15 @@ def compute_cell_accuracy(df_current: pd.DataFrame, df_gold: pd.DataFrame, colum
     
     for col in columns:
         if col in df_current.columns and col in df_gold.columns:
-            cur_vals = list(df_current[col].astype(str))
-            gold_vals = list(df_gold[col].astype(str))
+            # Normalize strings for comparison: handle numeric decimals (.0)
+            def normalize(v):
+                s = str(v).strip()
+                if s.endswith('.0'): s = s[:-2]
+                if s == 'nan' or s == 'None': return 'nan'
+                return s
+
+            cur_vals = [normalize(v) for v in df_current[col]]
+            gold_vals = [normalize(v) for v in df_gold[col]]
             
             cur_counts = {}
             for v in cur_vals: cur_counts[v] = cur_counts.get(v, 0) + 1

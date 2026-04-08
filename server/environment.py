@@ -87,11 +87,11 @@ class DataCleaningEnv:
                 else: penalties += 0.1
             elif action.op == OpType.NORMALIZE_CASE:
                 if col and col in self.df.columns:
-                    self.df[col] = self.df[col].astype(str).str.title()
+                    self.df[col] = self.df[col].apply(lambda x: str(x).title() if pd.notnull(x) else x)
                 else: penalties += 0.1
             elif action.op == OpType.STRIP_WHITESPACE:
                 if col and col in self.df.columns:
-                    self.df[col] = self.df[col].astype(str).str.strip()
+                    self.df[col] = self.df[col].apply(lambda x: str(x).strip() if pd.notnull(x) else x)
                 else: penalties += 0.1
             elif action.op == OpType.DEDUP_ROWS:
                 if col:
@@ -123,11 +123,21 @@ class DataCleaningEnv:
                 else: penalties += 0.1
             elif action.op == OpType.GROUPBY_SUM:
                 if col and action.value:
+                    # Clean up grouping columns: split by comma, strip whitespace, and verify existence
                     cols_to_group = [c.strip() for c in col.split(",") if c.strip() in self.df.columns]
-                    if cols_to_group and action.value in self.df.columns:
-                        self.df[action.value] = pd.to_numeric(self.df[action.value], errors='coerce')
-                        self.df = self.df.groupby(cols_to_group, as_index=False)[action.value].sum()
-                else: penalties += 0.1
+                    val_col = action.value.strip()
+                    
+                    if cols_to_group and val_col in self.df.columns:
+                        # Ensure value column is numeric before grouping
+                        self.df[val_col] = pd.to_numeric(self.df[val_col], errors='coerce').fillna(0)
+                        # Perform grouping and reset index to keep it as a flat dataframe
+                        self.df = self.df.groupby(cols_to_group, as_index=False)[val_col].sum()
+                        # Round to avoid float precision issues in metric
+                        self.df[val_col] = self.df[val_col].round(2)
+                    else:
+                        penalties += 0.1
+                else:
+                    penalties += 0.1
         except Exception:
             penalties += 0.2
             
