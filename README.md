@@ -1,3 +1,12 @@
+---
+title: OpenEnv Tabular Cleaning
+emoji: 🧹
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Tabular Data Cleaning Environment
 
 This is a real-world OpenEnv environment representing data engineering and standardization workflows. 
