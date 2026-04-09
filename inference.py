@@ -38,7 +38,7 @@ async def run_task(task_id: str, client: EnvClient, llm: AsyncOpenAI, model_name
         obs = await client.reset(task_id)
     except Exception as e:
         print(f"Error resetting environment: {e}", flush=True)
-        log_end(task=task_id, score=0.0, steps=0)
+        log_end(task=task_id, score=0.001, steps=0)
         return
 
     history: List[str] = []
@@ -114,9 +114,10 @@ async def run_task(task_id: str, client: EnvClient, llm: AsyncOpenAI, model_name
         log_step(step=step, reward=reward)
         
         if done:
-            score = info.get("final_score", 0.0)
+            score = info.get("final_score", 0.001)
             break
             
+    score = max(0.001, min(0.999, score))
     log_end(task=task_id, score=score, steps=steps_taken)
 
 async def main():

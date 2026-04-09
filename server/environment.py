@@ -199,7 +199,8 @@ class DataCleaningEnv:
             
         info = {}
         if done:
-            final_score = min(max(composite + 0.05 * (max_steps - self.step_count)/max_steps, 0.0), 1.0)
+            raw_score = composite + 0.05 * (max_steps - self.step_count) / max_steps
+            final_score = min(max(raw_score, 0.001), 0.999)
             info["final_score"] = float(final_score)
             
         return obs, r, done, info
