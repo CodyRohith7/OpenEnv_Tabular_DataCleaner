@@ -1,0 +1,17 @@
+lead_source,region,total_revenue
+direct,East,1000
+direct,North,1500
+direct,South,1000
+direct,West,1000
+organic,East,1500
+organic,North,1700
+organic,South,1200
+organic,West,1200
+paid,East,1500
+paid,North,1500
+paid,South,1000
+paid,West,1200
+referral,East,1000
+referral,North,2000
+referral,South,1000
+referral,West,1000

@@ -1,4 +1,21 @@
 month,country,total_revenue
-2023-01,France,330.0
-2023-01,Germany,150.0
-2023-02,France,110.0
+2023-01,France,540.0
+2023-01,Germany,540.0
+2023-01,United Kingdom,508.0
+2023-01,United States,800.0
+2023-02,France,216.0
+2023-02,Germany,486.0
+2023-02,United Kingdom,635.0
+2023-02,United States,600.0
+2023-03,France,432.0
+2023-03,Germany,540.0
+2023-03,United Kingdom,635.0
+2023-03,United States,1000.0
+2023-04,France,432.0
+2023-04,Germany,540.0
+2023-04,United Kingdom,635.0
+2023-04,United States,1200.0
+2023-05,France,399.6
+2023-05,Germany,540.0
+2023-05,United Kingdom,508.0
+2023-05,United States,900.0

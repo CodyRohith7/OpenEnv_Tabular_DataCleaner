@@ -1,6 +1,31 @@
-order_id,line_item,order_date,country
-101,1,2023/01/15,france
-101,1,2023/01/15,france
-102,1,02/20/2023,GERMANY  
-103,1,2023-03-01, Italy
-103,1,2023-03-01, Italy
+order_id,line_item,order_date,country,status
+1001,1,2023/01/10,france,confirmed
+1001,1,2023/01/10,france,confirmed
+1002,1,01/15/2023,GERMANY,confirmed
+1002,2,01/15/2023,GERMANY,pending
+1003,1,2023-02-05, italy ,shipped
+1003,1,2023-02-05, italy ,shipped
+1004,1,2023/02/20,SPAIN,confirmed
+1004,2,2023/02/20,SPAIN,confirmed
+1005,1,03/01/2023,france,pending
+1005,1,03/01/2023,france,pending
+1006,1,2023-03-15,  GERMANY  ,confirmed
+1006,2,2023-03-15,  GERMANY  ,pending
+1007,1,2023/04/01,ITALY,shipped
+1007,2,2023/04/01,ITALY,confirmed
+1008,1,04/20/2023, spain,pending
+1008,1,04/20/2023, spain,pending
+1009,1,2023-05-05,FRANCE,confirmed
+1009,2,2023-05-05,FRANCE,shipped
+1010,1,05/15/2023,germany,pending
+1010,1,05/15/2023,germany,pending
+1011,1,2023/06/01,SPAIN,confirmed
+1011,2,2023/06/01,SPAIN,shipped
+1012,1,06/20/2023, italy ,confirmed
+1012,1,06/20/2023, italy ,confirmed
+1013,1,2023-07-05,FRANCE,pending
+1013,2,2023-07-05,FRANCE,confirmed
+1014,1,07/15/2023,germany,shipped
+1014,1,07/15/2023,germany,shipped
+1015,1,2023/08/01, SPAIN  ,confirmed
+1015,1,2023/08/01, SPAIN  ,confirmed

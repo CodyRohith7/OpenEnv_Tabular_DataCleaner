@@ -1,6 +1,21 @@
-id,city
-1,New York
-2,London
-3,Unknown
-4,Paris
-5,London
+contact_id,full_name,region,email_domain
+1,Alice Johnson,North West,gmail.com
+2,Bob Smith,South East,yahoo.com
+3,Charlie Brown,North West,hotmail.com
+4,Diana Prince,Unknown,outlook.com
+5,Edward Norton,South West,gmail.com
+6,Fiona Green,North East,yahoo.com
+7,George Harris,South East,protonmail.com
+8,Hannah White,Unknown,gmail.com
+9,Ivan Black,North West,icloud.com
+10,Jane Doe,South West,gmail.com
+11,Kevin Lee,Unknown,yahoo.com
+12,Linda Martin,North East,hotmail.com
+13,Michael Scott,South East,gmail.com
+14,Nancy Drew,North West,outlook.com
+15,Oliver Twist,Unknown,protonmail.com
+16,Patricia High,South West,gmail.com
+17,Quinn Sharp,North East,icloud.com
+18,Robert Down,South East,yahoo.com
+19,Sarah Connor,Unknown,gmail.com
+20,Thomas Wayne,North West,hotmail.com

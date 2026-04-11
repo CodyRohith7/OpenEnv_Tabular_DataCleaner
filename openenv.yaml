@@ -1,17 +1,51 @@
-name: TabularDataCleaning
-version: "1.0"
+name: EnterpriseDataCleaningEnv
+version: "2.0"
 description: >
-  An environment where an agent cleans tabular data using standard declarative data engineering primitives, judged by metric improvements on hidden ground-truth datasets.
+  A production-grade OpenEnv environment that simulates real-world enterprise
+  data engineering workflows. An AI agent must apply declarative ETL operations
+  (normalization, deduplication, date parsing, currency conversion, PII redaction,
+  JSON extraction, outlier removal) to reconcile raw tabular exports against a
+  hidden ground-truth dataset. Evaluated across four difficulty tiers from basic
+  CRM cleanup to a full multi-stage ETL pipeline.
+
 build:
   dockerfile: Dockerfile
+
 environment:
   API_BASE_URL: "https://api.openai.com/v1"
   MODEL_NAME: "gpt-4o"
   HF_TOKEN: ""
+  ENV_URL: "http://localhost:7860"
+
 tasks:
   - id: easy
-    description: "Single-column cleanup (whitespace trim, case normalization, missing value imputation)."
+    difficulty: easy
+    description: "CRM contact normalization — strip whitespace, title-case names/regions, impute missing values."
+    max_steps: 8
+    target_score: 1.0
+
   - id: medium
-    description: "Multi-column standardizing and exact row deduplication."
+    difficulty: medium
+    description: "Sales order standardization — mixed-format date parsing, country normalization, exact-duplicate removal."
+    max_steps: 10
+    target_score: 1.0
+
   - id: hard
-    description: "End-to-end data processing: extraction, currency conversion, and aggregations using Groupby."
+    difficulty: hard
+    description: "Multi-currency revenue aggregation — timestamp extraction, EUR/GBP→USD conversion, groupby-sum, schema rename."
+    max_steps: 15
+    target_score: 1.0
+
+  - id: extreme
+    difficulty: extreme
+    description: "Full ETL pipeline — JSON parsing, numeric casting, PII redaction, outlier removal, normalization, aggregation, rename."
+    max_steps: 20
+    target_score: 1.0
+
+reward:
+  type: shaped
+  range: [0.0, 1.0]
+  description: >
+    Step reward proportional to composite metric improvement (0.3 base + delta*5.0).
+    Invalid actions penalized (-0.1). Valid no-ops receive minimal positive signal (0.05).
+    Final score includes an efficiency bonus (up to +0.05) for early task completion.

@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenEnv | Enterprise Data Cleaning Playground</title>
+  <meta name="description" content="Interactive RL environment playground for enterprise tabular data engineering — OpenEnv for Meta PyTorch Hackathon 2026." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ─── Design Tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg:         #080d18;
+      --bg2:        #0e1525;
+      --bg3:        #131c30;
+      --card:       rgba(255,255,255,0.04);
+      --card-hov:   rgba(255,255,255,0.07);
+      --border:     rgba(255,255,255,0.08);
+      --border2:    rgba(255,255,255,0.14);
+      --accent:     #FF6B35;
+      --accent2:    #ff9a5c;
+      --teal:       #4ECDC4;
+      --purple:     #A78BFA;
+      --green:      #34D399;
+      --red:        #F87171;
+      --yellow:     #FBBF24;
+      --text:       #E2EAF6;
+      --text2:      #94A3B8;
+      --text3:      #4A5568;
+      --mono:       'JetBrains Mono', monospace;
+      --radius:     12px;
+      --radius-lg:  20px;
+      --glow:       0 0 40px rgba(255,107,53,0.15);
+      --shadow:     0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    /* ─── Reset & Base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Animated Background ───────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(255,107,53,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(78,205,196,0.05) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ─── Header ────────────────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,13,24,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), #ff3e6c);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: var(--glow);
+    }
+    .logo-text { font-weight: 700; font-size: 1.15rem; }
+    .logo-text span { color: var(--accent); }
+    .header-badges { display: flex; gap: 8px; align-items: center; }
+    .badge {
+      padding: 4px 10px; border-radius: 20px; font-size: 0.72rem;
+      font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent); border: 1px solid rgba(255,107,53,0.3); }
+    .badge-teal   { background: rgba(78,205,196,0.12); color: var(--teal);   border: 1px solid rgba(78,205,196,0.25); }
+    .badge-live   {
+      background: rgba(52,211,153,0.12); color: var(--green);
+      border: 1px solid rgba(52,211,153,0.3);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .badge-live::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 1.5s ease infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 64px);
+      position: relative; z-index: 1;
+    }
+
+    /* ─── Sidebar ───────────────────────────────────────────────────── */
+    .sidebar {
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .sidebar-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text3);
+      padding: 0 12px 8px; margin-top: 8px;
+    }
+    .task-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: var(--radius);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text2); cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left; width: 100%;
+      font-family: 'Inter', sans-serif;
+    }
+    .task-btn:hover {
+      background: var(--card-hov);
+      color: var(--text);
+      border-color: var(--border2);
+    }
+    .task-btn.active {
+      background: rgba(255,107,53,0.12);
+      border-color: rgba(255,107,53,0.35);
+      color: var(--text);
+    }
+    .task-btn .diff-badge {
+      font-size: 0.62rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 8px; letter-spacing: 0.05em; white-space: nowrap;
+      margin-left: auto;
+    }
+    .diff-easy   { background: rgba(52,211,153,0.15);  color: var(--green); }
+    .diff-medium { background: rgba(251,191,36,0.15);  color: var(--yellow); }
+    .diff-hard   { background: rgba(248,113,113,0.15); color: var(--red); }
+    .diff-extreme{ background: rgba(167,139,250,0.15); color: var(--purple); }
+
+    .task-btn .task-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+    .task-btn .task-name { font-size: 0.9rem; font-weight: 500; }
+
+    .sidebar-divider {
+      height: 1px; background: var(--border);
+      margin: 12px 0;
+    }
+    .sidebar-info {
+      padding: 14px; border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 0.78rem; color: var(--text2); line-height: 1.6;
+    }
+    .sidebar-info strong { color: var(--text); display: block; margin-bottom: 4px; }
+
+    /* ─── Main Content ──────────────────────────────────────────────── */
+    .main {
+      padding: 28px 32px;
+      display: flex; flex-direction: column; gap: 20px;
+      overflow: hidden;
+    }
+
+    /* ─── Glass Card ────────────────────────────────────────────────── */
+    .glass {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ─── Task Description ──────────────────────────────────────────── */
+    .task-header {
+      padding: 20px 24px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    }
+    .task-title-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    }
+    .task-title {
+      font-size: 1.25rem; font-weight: 700;
+    }
+    .task-desc {
+      font-size: 0.82rem; color: var(--text2); line-height: 1.65;
+      white-space: pre-line;
+    }
+    .task-stats {
+      display: flex; gap: 16px; flex-shrink: 0;
+    }
+    .task-stat {
+      text-align: center;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      min-width: 80px;
+    }
+    .task-stat .stat-val { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+    .task-stat .stat-lbl { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ─── KPI Grid ──────────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .kpi {
+      padding: 18px 20px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--border);
+      position: relative; overflow: hidden;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+    .kpi:hover { transform: translateY(-2px); border-color: var(--border2); }
+    .kpi::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+    .kpi-accuracy::after  { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .kpi-schema::after    { background: linear-gradient(90deg, var(--teal), #00bfb3); }
+    .kpi-missing::after   { background: linear-gradient(90deg, var(--yellow), #f59e0b); }
+    .kpi-dup::after       { background: linear-gradient(90deg, var(--purple), #8b5cf6); }
+
+    .kpi-label  { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 8px; }
+    .kpi-value  { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .kpi-sub    { font-size: 0.72rem; color: var(--text2); }
+    .kpi-accuracy .kpi-value  { color: var(--accent); }
+    .kpi-schema .kpi-value    { color: var(--teal); }
+    .kpi-missing .kpi-value   { color: var(--yellow); }
+    .kpi-dup .kpi-value       { color: var(--purple); }
+
+    /* progress bar inside KPI */
+    .kpi-bar { height: 4px; border-radius: 2px; background: var(--bg3); margin-top: 10px; overflow: hidden; }
+    .kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+    .kpi-accuracy .kpi-bar-fill  { background: var(--accent); }
+    .kpi-schema .kpi-bar-fill    { background: var(--teal); }
+    .kpi-missing .kpi-bar-fill   { background: var(--yellow); }
+    .kpi-dup .kpi-bar-fill       { background: var(--purple); }
+
+    /* ─── Bottom Grid (table + chart + log) ──────────────────────────── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+      align-items: start;
+    }
+    .table-panel, .right-col { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ─── Panel Header ──────────────────────────────────────────────── */
+    .panel-hdr {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-hdr h3 { font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .panel-body { padding: 16px 20px; }
+
+    /* ─── Data Table ────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; overflow-y: auto; max-height: 320px; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    thead { position: sticky; top: 0; z-index: 2; }
+    th {
+      background: var(--bg3);
+      color: var(--text2);
+      font-weight: 600; text-align: left;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text2);
+      max-width: 200px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.25s; }
+    tbody tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+    tbody tr.row-changed td { animation: rowFlash 0.7s ease; }
+    @keyframes rowFlash {
+      0%   { background: rgba(255,107,53,0.18); }
+      100% { background: transparent; }
+    }
+
+    /* ─── Rewards Chart ─────────────────────────────────────────────── */
+    .chart-wrap { padding: 16px; }
+    canvas { max-height: 180px; }
+
+    /* ─── Operations Log ────────────────────────────────────────────── */
+    .ops-log {
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .ops-log:empty::after {
+      content: 'No operations yet. Select a task and run the agent.';
+      color: var(--text3); font-size: 0.78rem; font-style: italic;
+    }
+    .op-entry {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px 10px; border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      font-size: 0.76rem;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .op-step { font-weight: 700; color: var(--text3); min-width: 24px; font-family: var(--mono); }
+    .op-name { font-weight: 600; color: var(--accent); font-family: var(--mono); }
+    .op-col  { color: var(--teal); font-family: var(--mono); }
+    .op-rew  { margin-left: auto; font-weight: 600; font-family: var(--mono); white-space: nowrap; }
+    .op-rew.pos { color: var(--green); }
+    .op-rew.neg { color: var(--red); }
+    .op-rew.neu { color: var(--text3); }
+
+    /* ─── Run Button ────────────────────────────────────────────────── */
+    .run-section {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+    .run-info { font-size: 0.82rem; color: var(--text2); }
+    .run-info strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 0.9rem; }
+    .btn-run {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, var(--accent), #ff3e6c);
+      color: white; border: none; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(255,107,53,0.35);
+    }
+    .btn-run:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(255,107,53,0.5);
+    }
+    .btn-run:disabled {
+      opacity: 0.5; cursor: not-allowed; transform: none;
+    }
+    .btn-run .btn-icon { font-size: 1.1rem; }
+
+    .btn-reset {
+      padding: 10px 18px;
+      background: transparent;
+      color: var(--text2); border: 1px solid var(--border2);
+      border-radius: 10px; font-size: 0.84rem; font-weight: 500;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease;
+    }
+    .btn-reset:hover { color: var(--text); border-color: var(--border2); background: var(--card-hov); }
+
+    /* ─── Status Bar ───────────────────────────────────────────────── */
+    .status-bar {
+      font-size: 0.76rem; color: var(--text2);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+    .status-dot.running { background: var(--green); animation: pulse-dot 1s infinite; }
+    .status-dot.done    { background: var(--accent); }
+    .status-dot.ready   { background: var(--teal); }
+
+    /* ─── Step Progress ─────────────────────────────────────────────── */
+    .step-track {
+      display: flex; gap: 4px; flex-wrap: wrap;
+    }
+    .step-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--bg3); border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .step-dot.done  { background: var(--green); border-color: var(--green); }
+    .step-dot.curr  { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(255,107,53,0.6); }
+
+    /* ─── Final Score Banner ─────────────────────────────────────────── */
+    .score-banner {
+      padding: 16px 24px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(255,107,53,0.12), rgba(255,62,108,0.08));
+      border: 1px solid rgba(255,107,53,0.3);
+      display: flex; align-items: center; justify-content: space-between;
+      animation: slideIn 0.4s ease;
+    }
+    .score-banner .score-title { font-weight: 600; font-size: 1rem; color: var(--text); }
+    .score-banner .score-sub   { font-size: 0.78rem; color: var(--text2); margin-top: 2px; }
+    .score-big { font-size: 2.4rem; font-weight: 800; color: var(--accent); font-family: var(--mono); }
+
+    /* ─── Scrollbar ──────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ─── Responsive ─────────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { flex-direction: row; flex-wrap: wrap; gap: 8px; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ─── Header ──────────────────────────────────────────────────────── -->
+  <header>
+    <a href="/" class="logo">
+      <div class="logo-icon">🧹</div>
+      <span class="logo-text">Open<span>Env</span> &nbsp;·&nbsp; Data Cleaner</span>
+    </a>
+    <div class="header-badges">
+      <span class="badge badge-orange">Meta PyTorch Hackathon 2026</span>
+      <span class="badge badge-teal">OpenEnv v2.0</span>
+      <span class="badge badge-live" id="health-badge">Live</span>
+    </div>
+  </header>
+
+  <!-- ─── Layout ──────────────────────────────────────────────────────── -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-label">Select Task</div>
+      <button class="task-btn active" data-task="easy" id="btn-easy">
+        <span class="task-icon">🟢</span>
+        <span class="task-name">Easy</span>
+        <span class="diff-badge diff-easy">Easy</span>
+      </button>
+      <button class="task-btn" data-task="medium" id="btn-medium">
+        <span class="task-icon">🟡</span>
+        <span class="task-name">Medium</span>
+        <span class="diff-badge diff-medium">Medium</span>
+      </button>
+      <button class="task-btn" data-task="hard" id="btn-hard">
+        <span class="task-icon">🔴</span>
+        <span class="task-name">Hard</span>
+        <span class="diff-badge diff-hard">Hard</span>
+      </button>
+      <button class="task-btn" data-task="extreme" id="btn-extreme">
+        <span class="task-icon">🟣</span>
+        <span class="task-name">Extreme</span>
+        <span class="diff-badge diff-extreme">Extreme</span>
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-label">API Docs</div>
+      <button class="task-btn" onclick="window.open('/docs','_blank')">
+        <span class="task-icon">📖</span>
+        <span class="task-name">Swagger UI</span>
+      </button>
+      <button class="task-btn" onclick="window.open('/redoc','_blank')">
+        <span class="task-icon">📋</span>
+        <span class="task-name">ReDoc</span>
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-info">
+        <strong>How it works</strong>
+        Click a task, then hit <strong style="color:var(--accent)">Run Baseline Agent</strong> to watch the environment transform raw messy data into clean gold standard data — step by step.
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Task Header -->
+      <div class="glass task-header" id="task-header">
+        <div style="flex:1">
+          <div class="task-title-row">
+            <span class="task-title" id="task-title">CRM Contact Normalization</span>
+            <span class="diff-badge diff-easy" id="task-diff-badge">Easy</span>
+          </div>
+          <div class="task-desc" id="task-instructions">Loading task instructions...</div>
+        </div>
+        <div class="task-stats">
+          <div class="task-stat">
+            <div class="stat-val" id="stat-rows">—</div>
+            <div class="stat-lbl">Rows</div>
+          </div>
+          <div class="task-stat">
+            <div class="stat-val" id="stat-cols">—</div>
+            <div class="stat-lbl">Cols</div>
+          </div>
+          <div class="task-stat">
+            <div class="stat-val" id="stat-steps">—</div>
+            <div class="stat-lbl">Max Steps</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi kpi-accuracy">
+          <div class="kpi-label">Composite Score</div>
+          <div class="kpi-value" id="kpi-acc">0%</div>
+          <div class="kpi-sub">vs. gold dataset</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="bar-acc" style="width:0%"></div></div>
+        </div>
+        <div class="kpi kpi-schema">
+          <div class="kpi-label">Schema Score</div>
+          <div class="kpi-value" id="kpi-schema">—</div>
+          <div class="kpi-sub">target structure match</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="bar-schema" style="width:0%"></div></div>
+        </div>
+        <div class="kpi kpi-missing">
+          <div class="kpi-label">Missing Rate</div>
+          <div class="kpi-value" id="kpi-miss">—</div>
+          <div class="kpi-sub">NaN cells</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="bar-miss" style="width:0%"></div></div>
+        </div>
+        <div class="kpi kpi-dup">
+          <div class="kpi-label">Duplicate Rate</div>
+          <div class="kpi-value" id="kpi-dup">—</div>
+          <div class="kpi-sub">redundant rows</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="bar-dup" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Step Progress + Run -->
+      <div class="run-section">
+        <div class="run-info">
+          <strong id="run-title">Ready to clean data</strong>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <div class="status-bar">
+              <div class="status-dot ready" id="status-dot"></div>
+              <span id="status-text">Select a task to begin</span>
+            </div>
+          </div>
+          <div class="step-track" id="step-track" style="margin-top:8px"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-reset" id="btn-reset" onclick="resetCurrentTask()">↺ Reset</button>
+          <button class="btn-run" id="btn-agent" onclick="runAgent()">
+            <span class="btn-icon">▶</span> Run Baseline Agent
+          </button>
+        </div>
+      </div>
+
+      <!-- Final Score Banner (hidden until done) -->
+      <div class="score-banner" id="score-banner" style="display:none">
+        <div>
+          <div class="score-title">🏆 Episode Complete!</div>
+          <div class="score-sub" id="score-sub">—</div>
+        </div>
+        <div class="score-big" id="score-big">—</div>
+      </div>
+
+      <!-- Bottom Grid -->
+      <div class="bottom-grid">
+
+        <!-- Table Panel -->
+        <div class="table-panel">
+          <div class="glass">
+            <div class="panel-hdr">
+              <h3>📊 Current Data Preview
+                <span style="font-size:0.7rem;font-weight:400;color:var(--text2);" id="row-count-label"></span>
+              </h3>
+              <div style="font-size:0.72rem;color:var(--text3)">first 5 rows</div>
+            </div>
+            <div class="panel-body" style="padding:0">
+              <div class="table-wrap">
+                <table id="data-table">
+                  <thead><tr id="table-head"></tr></thead>
+                  <tbody id="table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Chart + Log -->
+        <div class="right-col">
+
+          <!-- Rewards Chart -->
+          <div class="glass">
+            <div class="panel-hdr">
+              <h3>📈 Reward Per Step</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="rewardChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Operations Log -->
+          <div class="glass">
+            <div class="panel-hdr">
+              <h3>⚙️ Operations Log</h3>
+              <span style="font-size:0.72rem;color:var(--text3)" id="ops-count">0 ops</span>
+            </div>
+            <div class="ops-log" id="ops-log"></div>
+          </div>
+
+        </div>
+      </div><!-- /bottom-grid -->
+
+    </main>
+  </div><!-- /layout -->
+
+  <!-- ─── JavaScript ─────────────────────────────────────────────────────── -->
+  <script>
+  // ── Hardcoded baseline agent action sequences ──────────────────────────
+  const BASELINE_ACTIONS = {
+    easy: [
+      {op:"STRIP_WHITESPACE", column:"full_name"},
+      {op:"STRIP_WHITESPACE", column:"region"},
+      {op:"NORMALIZE_CASE",   column:"full_name"},
+      {op:"NORMALIZE_CASE",   column:"region"},
+      {op:"FILL_MISSING",     column:"region", value:"Unknown"},
+    ],
+    medium: [
+      {op:"STRIP_WHITESPACE", column:"country"},
+      {op:"NORMALIZE_CASE",   column:"country"},
+      {op:"PARSE_DATE",       column:"order_date"},
+      {op:"DEDUP_ROWS",       column:"order_id,line_item"},
+    ],
+    hard: [
+      {op:"EXTRACT_MONTH",      column:"timestamp",    value:"month"},
+      {op:"CONVERT_CURRENCY",   column:"currency"},
+      {op:"GROUPBY_SUM",        column:"month,country",value:"amount"},
+      {op:"RENAME_COLUMN",      column:"amount",       value:"total_revenue"},
+    ],
+    extreme: [
+      {op:"EXTRACT_JSON",   column:"metadata_json", value:"source", pattern:"lead_source"},
+      {op:"CAST_NUMERIC",   column:"revenue_usd"},
+      {op:"PII_REDACT",     column:"contact_email"},
+      {op:"DROP_OUTLIERS",  column:"revenue_usd"},
+      {op:"NORMALIZE_CASE", column:"region"},
+      {op:"GROUPBY_SUM",    column:"lead_source,region", value:"revenue_usd"},
+      {op:"RENAME_COLUMN",  column:"revenue_usd",         value:"total_revenue"},
+    ],
+  };
+
+  const TASK_META = {
+    easy:    {title:"CRM Contact Normalization",        diff:"Easy",    diffClass:"diff-easy",    icon:"🟢", maxSteps:8},
+    medium:  {title:"Sales Order Standardization",     diff:"Medium",  diffClass:"diff-medium",  icon:"🟡", maxSteps:10},
+    hard:    {title:"Multi-Currency Revenue Ledger",   diff:"Hard",    diffClass:"diff-hard",    icon:"🔴", maxSteps:15},
+    extreme: {title:"Full ETL Pipeline",               diff:"Extreme", diffClass:"diff-extreme", icon:"🟣", maxSteps:20},
+  };
+
+  // ── State ──────────────────────────────────────────────────────────────
+  let currentTask = "easy";
+  let isRunning   = false;
+  let rewardHistory = [];
+  let stepCount = 0;
+
+  // ── Chart.js ───────────────────────────────────────────────────────────
+  const chartCtx = document.getElementById("rewardChart").getContext("2d");
+  const gradient = chartCtx.createLinearGradient(0, 0, 0, 180);
+  gradient.addColorStop(0,   "rgba(255,107,53,0.35)");
+  gradient.addColorStop(1,   "rgba(255,107,53,0.0)");
+
+  const rewardChart = new Chart(chartCtx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Reward",
+        data: [],
+        borderColor: "#FF6B35",
+        backgroundColor: gradient,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: "#FF6B35",
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#4A5568", font:{size:10} } },
+        y: { min: 0, max: 1.05, grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#4A5568", font:{size:10} } },
+      },
+      animation: { duration: 400, easing: "easeOutQuart" },
+    },
+  });
+
+  // ── Utilities ──────────────────────────────────────────────────────────
+  async function api(method, path, body) {
+    const opts = { method, headers: {"Content-Type":"application/json"} };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(path, opts);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+
+  function pct(v) { return (v * 100).toFixed(1) + "%"; }
+
+  function animateValue(el, from, to, format, duration=600) {
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      const val = from + (to - from) * ease;
+      el.textContent = format(val);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ── Update KPIs from observation ───────────────────────────────────────
+  let prevKpi = {acc:0, schema:1, miss:0, dup:0};
+  function updateKpis(obs) {
+    const acc = obs.cell_accuracy   ?? 0;
+    const sch = obs.schema_score    ?? 1;
+    const mis = obs.missing_rate    ?? 0;
+    const dup = obs.duplicate_rate  ?? 0;
+
+    animateValue(document.getElementById("kpi-acc"),    prevKpi.acc,    acc, v => (v*100).toFixed(1)+"%");
+    animateValue(document.getElementById("kpi-schema"), prevKpi.schema, sch, v => (v*100).toFixed(1)+"%");
+    animateValue(document.getElementById("kpi-miss"),   prevKpi.miss,   mis, v => (v*100).toFixed(1)+"%");
+    animateValue(document.getElementById("kpi-dup"),    prevKpi.dup,    dup, v => (v*100).toFixed(1)+"%");
+
+    document.getElementById("bar-acc").style.width    = (acc*100)+"%";
+    document.getElementById("bar-schema").style.width = (sch*100)+"%";
+    document.getElementById("bar-miss").style.width   = (mis*100)+"%";
+    document.getElementById("bar-dup").style.width    = (dup*100)+"%";
+
+    prevKpi = {acc, schema:sch, miss:mis, dup};
+
+    document.getElementById("row-count-label").textContent =
+      `· ${obs.row_count} rows · ${obs.columns?.length ?? '?'} cols`;
+    document.getElementById("stat-rows").textContent = obs.row_count ?? "—";
+    document.getElementById("stat-cols").textContent = obs.columns?.length ?? "—";
+  }
+
+  // ── Render data table ──────────────────────────────────────────────────
+  function renderTable(obs) {
+    const cols = obs.columns ?? [];
+    const rows = obs.preview_current ?? [];
+
+    const head = document.getElementById("table-head");
+    const body = document.getElementById("table-body");
+
+    head.innerHTML = cols.map(c => `<th title="${c}">${c}</th>`).join("");
+    body.innerHTML = rows.map(r =>
+      `<tr class="row-changed"><td>${cols.map(c => escHtml(String(r.values?.[c]??''))).join("</td><td>")}</td></tr>`
+    ).join("");
+
+    setTimeout(() => {
+      body.querySelectorAll("tr").forEach(tr => tr.classList.remove("row-changed"));
+    }, 800);
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // ── Render step progress dots ──────────────────────────────────────────
+  function renderStepDots(currentStep, maxSteps) {
+    const track = document.getElementById("step-track");
+    track.innerHTML = "";
+    for (let i = 0; i < maxSteps; i++) {
+      const d = document.createElement("div");
+      d.className = "step-dot" + (i < currentStep ? " done" : i === currentStep ? " curr" : "");
+      track.appendChild(d);
+    }
+  }
+
+  // ── Add operation to log ───────────────────────────────────────────────
+  function addOpLog(step, action, rewardVal, delta) {
+    const log = document.getElementById("ops-log");
+    const cls = delta > 0.01 ? "pos" : delta < -0.001 ? "neg" : "neu";
+    const colStr = action.column ? `<span class="op-col">${action.column}</span>` : "";
+    const valStr = action.value  ? ` = <span style="color:var(--text2)">${action.value}</span>` : "";
+    const entry = document.createElement("div");
+    entry.className = "op-entry";
+    entry.innerHTML = `
+      <span class="op-step">${step}</span>
+      <span class="op-name">${action.op}</span>
+      ${colStr}${valStr}
+      <span class="op-rew ${cls}">${rewardVal.toFixed(3)}</span>
+    `;
+    log.prepend(entry);
+    document.getElementById("ops-count").textContent = `${step} ops`;
+  }
+
+  // ── Update reward chart ────────────────────────────────────────────────
+  function pushChartPoint(step, reward) {
+    rewardChart.data.labels.push(`S${step}`);
+    rewardChart.data.datasets[0].data.push(reward);
+    rewardChart.update("none");
+  }
+
+  // ── Select task ────────────────────────────────────────────────────────
+  async function selectTask(taskId) {
+    if (isRunning) return;
+    currentTask = taskId;
+    document.querySelectorAll(".task-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById("btn-"+taskId).classList.add("active");
+
+    const meta = TASK_META[taskId];
+    document.getElementById("task-title").textContent  = meta.title;
+    document.getElementById("stat-steps").textContent  = meta.maxSteps;
+
+    const diffBadge = document.getElementById("task-diff-badge");
+    diffBadge.textContent  = meta.diff;
+    diffBadge.className    = "diff-badge " + meta.diffClass;
+
+    // clear state
+    rewardHistory = [];
+    stepCount = 0;
+    rewardChart.data.labels = [];
+    rewardChart.data.datasets[0].data = [];
+    rewardChart.update("none");
+    document.getElementById("ops-log").innerHTML = "";
+    document.getElementById("ops-count").textContent = "0 ops";
+    document.getElementById("score-banner").style.display = "none";
+    prevKpi = {acc:0, schema:1, miss:0, dup:0};
+    renderStepDots(0, meta.maxSteps);
+
+    setStatus("ready", "Resetting…");
+    try {
+      const obs = await api("POST", "/reset", {task_id: taskId});
+      document.getElementById("task-instructions").textContent = obs.instructions;
+      updateKpis(obs);
+      renderTable(obs);
+      setStatus("ready", "Ready — hit Run Baseline Agent");
+      document.getElementById("run-title").textContent = `Ready: ${meta.title}`;
+    } catch(e) {
+      setStatus("ready", "Error: " + e.message);
+    }
+  }
+
+  // ── Status helper ──────────────────────────────────────────────────────
+  function setStatus(state, text) {
+    const dot = document.getElementById("status-dot");
+    dot.className = "status-dot " + state;
+    document.getElementById("status-text").textContent = text;
+  }
+
+  // ── Reset ──────────────────────────────────────────────────────────────
+  async function resetCurrentTask() {
+    if (isRunning) return;
+    await selectTask(currentTask);
+  }
+
+  // ── Run baseline agent ─────────────────────────────────────────────────
+  async function runAgent() {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById("btn-agent").disabled = true;
+    document.getElementById("score-banner").style.display = "none";
+
+    const actions = BASELINE_ACTIONS[currentTask] || [];
+    const meta    = TASK_META[currentTask];
+
+    // Fresh reset
+    setStatus("running", "Resetting environment…");
+    try { await api("POST", "/reset", {task_id: currentTask}); }
+    catch(e) { setStatus("ready", "Reset failed: "+e.message); isRunning=false; document.getElementById("btn-agent").disabled=false; return; }
+
+    setStatus("running", "Agent is running…");
+    stepCount = 0;
+    let lastScore = 0;
+
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+      await new Promise(r => setTimeout(r, 700)); // pace for visual effect
+
+      try {
+        const result = await api("POST", "/step", action);
+        const obs    = result.observation;
+        const rew    = result.reward;
+        stepCount++;
+
+        updateKpis(obs);
+        renderTable(obs);
+        renderStepDots(stepCount, meta.maxSteps);
+        addOpLog(stepCount, action, rew.value, rew.delta_accuracy);
+        pushChartPoint(stepCount, rew.value);
+        setStatus("running", `Step ${stepCount}/${actions.length} — reward ${rew.value.toFixed(3)}`);
+
+        if (result.done) {
+          lastScore = result.info?.final_score ?? obs.cell_accuracy;
+          break;
+        }
+        lastScore = obs.cell_accuracy;
+      } catch(e) {
+        setStatus("ready", "Step error: "+e.message);
+        break;
+      }
+    }
+
+    // Final
+    setStatus("done", `Done — ${stepCount} steps used`);
+    const banner  = document.getElementById("score-banner");
+    const scoreBig = document.getElementById("score-big");
+    const scoreSub = document.getElementById("score-sub");
+    scoreBig.textContent = (lastScore*100).toFixed(1)+"%";
+    scoreSub.textContent = `${stepCount} / ${meta.maxSteps} steps  ·  task: ${currentTask}`;
+    banner.style.display = "flex";
+
+    isRunning = false;
+    document.getElementById("btn-agent").disabled = false;
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────
+  document.querySelectorAll(".task-btn[data-task]").forEach(btn => {
+    btn.addEventListener("click", () => selectTask(btn.dataset.task));
+  });
+
+  // Ping health
+  fetch("/health").then(r => r.json()).then(d => {
+    if (d.status === "ok") {
+      const b = document.getElementById("health-badge");
+      b.textContent = "Live";
+    }
+  }).catch(() => {
+    document.getElementById("health-badge").textContent = "Offline";
+    document.getElementById("health-badge").style.background = "rgba(248,113,113,0.15)";
+    document.getElementById("health-badge").style.color = "#F87171";
+  });
+
+  // Auto-load easy on page load
+  window.addEventListener("DOMContentLoaded", () => selectTask("easy"));
+  </script>
+</body>
+</html>
