@@ -1,7 +1,7 @@
 ---
 title: "OpenEnv: Enterprise Data Cleaning Environment"
 emoji: 🧹
-colorFrom: orange
+colorFrom: red
 colorTo: red
 sdk: docker
 pinned: false
