@@ -12,9 +12,10 @@ build:
   dockerfile: Dockerfile
 
 environment:
-  API_BASE_URL: "https://api.openai.com/v1"
-  MODEL_NAME: "gpt-4o"
-  HF_TOKEN: ""
+  # Set these as environment variables (do NOT hard-code secrets)
+  # OPENAI_API_KEY: <your key>
+  # API_BASE_URL: "https://api.openai.com/v1"   # default
+  MODEL_NAME: "gpt-4o-mini"
   ENV_URL: "http://localhost:7860"
 
 tasks:

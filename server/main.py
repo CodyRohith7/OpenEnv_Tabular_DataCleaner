@@ -19,7 +19,7 @@ app = FastAPI(
         "A production-grade reinforcement learning environment for tabular "
         "data engineering tasks — from basic CRM normalization (easy) to "
         "full ETL pipelines with JSON parsing, PII redaction, and outlier "
-        "removal (extreme). Built for the Meta PyTorch Hackathon 2026."
+        "removal (extreme)."
     ),
     version="2.0.0",
     docs_url="/docs",

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tabular-openenv"
 version = "1.0.0"
-description = "A tabular data cleaning OpenEnv for the Meta PyTorch Hackathon."
+description = "A production-grade reinforcement learning environment for tabular data engineering tasks."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

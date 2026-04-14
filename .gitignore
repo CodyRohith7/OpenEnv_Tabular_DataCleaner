@@ -1,10 +1,42 @@
-venv/
-.env
+# Python
 __pycache__/
-*.pyc
-.ipynb_checkpoints/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Secrets & environment files
+.env
+.env.*
+*.env
+
+# Lock files (tool-specific)
+uv.lock
+
+# Editor / OS
 .DS_Store
 *.swp
-.git/
-server/datasets/__pycache__/
+*.swo
+.idea/
+.vscode/
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Hackathon / deployment artifacts
 pre_validate.py
